@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Projektor Generalized Modules &#8212; Projektor Generalized 0.1.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=6625fa76" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=039e1c02" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=2389946f"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Projektor Generalized Documentation" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="module-projektor.base_models">
+<span id="projektor-generalized-modules"></span><h1>Projektor Generalized Modules<a class="headerlink" href="#module-projektor.base_models" title="Permalink to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="projektor.base_models.BaseClassifier">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">projektor.base_models.</span></span><span class="sig-name descname"><span class="pre">BaseClassifier</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_classes</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/projektor/base_models.html#BaseClassifier"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#projektor.base_models.BaseClassifier" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></p>
+<p>Base classifier interface.
+Any classifier you wish to use should inherit from this class and implement forward().</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="projektor.base_models.BaseClassifier.evaluate">
+<span class="sig-name descname"><span class="pre">evaluate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loader</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">criterion</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/projektor/base_models.html#BaseClassifier.evaluate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#projektor.base_models.BaseClassifier.evaluate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generic evaluation loop.
+Returns average loss and accuracy (in percentage).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="projektor.base_models.BaseClassifier.forward">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/projektor/base_models.html#BaseClassifier.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#projektor.base_models.BaseClassifier.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the forward pass.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="projektor.base_models.BaseClassifier.train_model">
+<span class="sig-name descname"><span class="pre">train_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">train_loader</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epochs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">criterion</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/projektor/base_models.html#BaseClassifier.train_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#projektor.base_models.BaseClassifier.train_model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generic training loop.
+Returns the best (lowest) training loss over epochs.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="projektor.base_models.BaseClassifier.training">
+<span class="sig-name descname"><span class="pre">training</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#projektor.base_models.BaseClassifier.training" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="projektor.base_models.BaseEmbedder">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">projektor.base_models.</span></span><span class="sig-name descname"><span class="pre">BaseEmbedder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/projektor/base_models.html#BaseEmbedder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#projektor.base_models.BaseEmbedder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></p>
+<p>Base embedder interface.
+Any model used for computing embeddings (for OT distance, etc.)
+should inherit from this class and implement forward().</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="projektor.base_models.BaseEmbedder.forward">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/projektor/base_models.html#BaseEmbedder.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#projektor.base_models.BaseEmbedder.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the embedding of x.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="projektor.base_models.BaseEmbedder.training">
+<span class="sig-name descname"><span class="pre">training</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#projektor.base_models.BaseEmbedder.training" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<span class="target" id="module-projektor.projector"></span><p>Module: projector.py</p>
+<p>This module provides two classes:</p>
+<section id="projector">
+<h2>Projector<a class="headerlink" href="#projector" title="Permalink to this heading">¶</a></h2>
+<p>The Projector class encapsulates methods to process experimental logs,
+generate pseudo–quadratic regression features, fit a linear regression model,
+and make performance predictions. It also provides a method for extrapolating
+performance to new data scales.</p>
+<p>Example usage:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">projektor.projector</span><span class="w"> </span><span class="kn">import</span> <span class="n">Projector</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">proj</span> <span class="o">=</span> <span class="n">Projector</span><span class="p">(</span><span class="n">pad_length</span><span class="o">=</span><span class="mi">11</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">reserrlog</span> <span class="o">=</span> <span class="p">[</span> <span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.15</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">]</span> <span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">otlog</span> <span class="o">=</span> <span class="p">[</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.2</span><span class="p">,</span> <span class="mf">1.1</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.9</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">]</span> <span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">accs</span> <span class="o">=</span> <span class="p">[</span> <span class="p">[</span><span class="mf">0.75</span><span class="p">,</span> <span class="mf">0.78</span><span class="p">,</span> <span class="mf">0.80</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.74</span><span class="p">,</span> <span class="mf">0.76</span><span class="p">]</span> <span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">aligned</span> <span class="o">=</span> <span class="n">proj</span><span class="o">.</span><span class="n">align_data</span><span class="p">(</span><span class="n">reserrlog</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mask_low</span><span class="p">,</span> <span class="n">mask_high</span> <span class="o">=</span> <span class="n">proj</span><span class="o">.</span><span class="n">compute_masks</span><span class="p">(</span><span class="n">aligned</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">X</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">proj</span><span class="o">.</span><span class="n">prepare_features</span><span class="p">(</span><span class="n">reserrlog</span><span class="p">,</span> <span class="n">otlog</span><span class="p">,</span> <span class="n">accs</span><span class="p">,</span> <span class="n">mask_high</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">results</span> <span class="o">=</span> <span class="n">proj</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">pred</span> <span class="o">=</span> <span class="n">proj</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Predicted performance:&quot;</span><span class="p">,</span> <span class="n">pred</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="optimaldatasourceselector">
+<h2>OptimalDataSourceSelector<a class="headerlink" href="#optimaldatasourceselector" title="Permalink to this heading">¶</a></h2>
+<p>The OptimalDataSourceSelector class implements a gradient-based optimizer to select
+an optimal mixing ratio among an arbitrary number (k) of data sources.</p>
+<p>Example usage:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">projektor.projector</span><span class="w"> </span><span class="kn">import</span> <span class="n">OptimalDataSourceSelector</span><span class="p">,</span> <span class="n">project_onto_simplex</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">k</span> <span class="o">=</span> <span class="mi">3</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">q_init</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.33</span><span class="p">,</span> <span class="mf">0.33</span><span class="p">,</span> <span class="mf">0.34</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># data_n0 and data_n1 should be dictionaries with keys:</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1">#   &#39;dual&#39;: 1D array of dual solutions,</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1">#   &#39;ds_lengths&#39;: list of source lengths,</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1">#   &#39;full_len&#39;: total samples,</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1">#   &#39;ot_dist&#39;: scalar OT distance.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">data_n0</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;dual&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">90</span><span class="p">),</span> <span class="s1">&#39;ds_lengths&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">30</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">30</span><span class="p">],</span> <span class="s1">&#39;full_len&#39;</span><span class="p">:</span> <span class="mi">90</span><span class="p">,</span> <span class="s1">&#39;ot_dist&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">data_n1</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;dual&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">90</span><span class="p">),</span> <span class="s1">&#39;ds_lengths&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">30</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">30</span><span class="p">],</span> <span class="s1">&#39;full_len&#39;</span><span class="p">:</span> <span class="mi">90</span><span class="p">,</span> <span class="s1">&#39;ot_dist&#39;</span><span class="p">:</span> <span class="mf">1.2</span><span class="p">}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">selector</span> <span class="o">=</span> <span class="n">OptimalDataSourceSelector</span><span class="p">(</span><span class="n">lr</span><span class="o">=</span><span class="mf">5e-4</span><span class="p">,</span> <span class="n">iterations</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">decay</span><span class="o">=</span><span class="mf">0.90</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">optimal_q</span> <span class="o">=</span> <span class="n">selector</span><span class="o">.</span><span class="n">optimize</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span> <span class="n">n0</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">n1</span><span class="o">=</span><span class="mi">1500</span><span class="p">,</span>
+<span class="gp">... </span>                              <span class="n">data_n0</span><span class="o">=</span><span class="n">data_n0</span><span class="p">,</span> <span class="n">data_n1</span><span class="o">=</span><span class="n">data_n1</span><span class="p">,</span>
+<span class="gp">... </span>                              <span class="n">q_init</span><span class="o">=</span><span class="n">q_init</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Optimal mixing ratios:&quot;</span><span class="p">,</span> <span class="n">optimal_q</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<dl class="py class">
+<dt class="sig sig-object py" id="projektor.projector.OptimalDataSourceSelector">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">projektor.projector.</span></span><span class="sig-name descname"><span class="pre">OptimalDataSourceSelector</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0005</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iterations</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decay</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.9</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/projektor/projector.html#OptimalDataSourceSelector"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#projektor.projector.OptimalDataSourceSelector" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="projektor.projector.OptimalDataSourceSelector.optimize">
+<span class="sig-name descname"><span class="pre">optimize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n0</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_n0</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_n1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q_init</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params0</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/projektor/projector.html#OptimalDataSourceSelector.optimize"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#projektor.projector.OptimalDataSourceSelector.optimize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Optimizes mixing ratios q = [q_1, …, q_k] for k data sources via gradient descent
+with projection onto the probability simplex.</p>
+<p>For each data source i, a gradient is computed using dual solutions and OT distances
+from two experiments (at data sizes n0 and n1). The gradient for source i is:</p>
+<blockquote>
+<div><p>grad_i = (1/ln(n1/n0)) * [ ln(n/n0)*g_i^(1) - ln(n/n1)*g_i^(0) ],</p>
+</div></blockquote>
+<p>where g_i^(0) and g_i^(1) are computed with user-supplied parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n</strong> (<em>float</em>) – Target data size.</p></li>
+<li><p><strong>n0</strong> (<em>float</em>) – Base data size for experiment 0.</p></li>
+<li><p><strong>n1</strong> (<em>float</em>) – Base data size for experiment 1.</p></li>
+<li><p><strong>data_n0</strong> (<em>dict</em>) – For experiment at n0; must contain:
+‘dual’: concatenated dual solution vector (1D array),
+‘ds_lengths’: list of lengths for each source,
+‘full_len’: total number of samples,
+‘ot_dist’: OT distance (scalar).</p></li>
+<li><p><strong>data_n1</strong> (<em>dict</em>) – Same as data_n0 but for experiment at n1.</p></li>
+<li><p><strong>q_init</strong> (<em>np.ndarray</em>) – Initial mixing ratios (shape (k,)) that sum to 1.</p></li>
+<li><p><strong>params0</strong> (<em>list</em>) – List of parameter dictionaries for experiment 0 (one per source), each with keys:
+‘b2’, ‘b1’, ‘b0’, ‘c2’, ‘c1’. Defaults to zeros if None.</p></li>
+<li><p><strong>params1</strong> (<em>list</em>) – Same as params0 for experiment 1.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Optimized mixing ratios q of shape (k,).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="projektor.projector.Projector">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">projektor.projector.</span></span><span class="sig-name descname"><span class="pre">Projector</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pad_length</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">11</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">5</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/projektor/projector.html#Projector"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#projektor.projector.Projector" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="projektor.projector.Projector.align_data">
+<span class="sig-name descname"><span class="pre">align_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_list</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/projektor/projector.html#Projector.align_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#projektor.projector.Projector.align_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Aligns a list of 1-D arrays to a fixed length by padding with zeros.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>data_list</strong> (<em>list</em>) – List of numeric arrays or lists.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Array of shape (n, pad_length).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="projektor.projector.Projector.compute_masks">
+<span class="sig-name descname"><span class="pre">compute_masks</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">aligned_data:</span> <span class="pre">~numpy.ndarray)</span> <span class="pre">-&gt;</span> <span class="pre">(&lt;class</span> <span class="pre">'numpy.ndarray'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">&lt;class</span> <span class="pre">'numpy.ndarray'&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/projektor/projector.html#Projector.compute_masks"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#projektor.projector.Projector.compute_masks" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes two binary masks from the aligned data.</p>
+<dl class="simple">
+<dt>mask_low:</dt><dd><p>True for entries with index less than threshold.</p>
+</dd>
+<dt>mask_high:</dt><dd><p>True for entries with index greater than or equal to threshold and where row+col &lt;= pad_length-1.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>aligned_data</strong> (<em>np.ndarray</em>) – Array of shape (n, pad_length).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>(mask_low, mask_high) as boolean arrays.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="projektor.projector.Projector.compute_scaling_matrices">
+<span class="sig-name descname"><span class="pre">compute_scaling_matrices</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n:</span> <span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m:</span> <span class="pre">int)</span> <span class="pre">-&gt;</span> <span class="pre">(&lt;class</span> <span class="pre">'numpy.ndarray'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">&lt;class</span> <span class="pre">'numpy.ndarray'&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/projektor/projector.html#Projector.compute_scaling_matrices"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#projektor.projector.Projector.compute_scaling_matrices" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes scaling matrices A1 and A2.</p>
+<p>A1[i, j] = i / (n - 1)
+A2[i, j] = j / (m - 1)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n</strong> (<em>int</em>) – Number of rows.</p></li>
+<li><p><strong>m</strong> (<em>int</em>) – Number of columns.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>(A1, A2)</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="projektor.projector.Projector.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/projektor/projector.html#Projector.fit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#projektor.projector.Projector.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits a linear regression model to predict performance from features.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Contains the fitted model and performance metrics (r2, mse, mae).</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="projektor.projector.Projector.predict">
+<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X_new</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/projektor/projector.html#Projector.predict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#projektor.projector.Projector.predict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Predicts performance for a new feature vector using the fitted model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>X_new</strong> (<em>np.ndarray</em>) – A 1D array (or a single-row 2D array) of features.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The predicted performance.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="projektor.projector.Projector.prepare_features">
+<span class="sig-name descname"><span class="pre">prepare_features</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">reserrlog:</span> <span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">otlog:</span> <span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">accs:</span> <span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask:</span> <span class="pre">~numpy.ndarray)</span> <span class="pre">-&gt;</span> <span class="pre">(&lt;class</span> <span class="pre">'numpy.ndarray'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">&lt;class</span> <span class="pre">'numpy.ndarray'&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/projektor/projector.html#Projector.prepare_features"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#projektor.projector.Projector.prepare_features" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prepares regression features and target vector from experimental logs.</p>
+<dl class="simple">
+<dt>Process:</dt><dd><ol class="arabic simple">
+<li><p>Align each log to a fixed length.</p></li>
+<li><p>Zero out entries indicated by the mask.</p></li>
+<li><p>Extract nonzero indices from the OT log.</p></li>
+<li><p>Compute the logarithm of error values.</p></li>
+<li><p>Compute scaling matrices.</p></li>
+<li><p>Assemble a feature matrix with 7 columns:
+[OT, scaling1, scaling2, scaling1*OT, scaling2*OT, (scaling2)^2*OT, (scaling1)^2*OT]</p></li>
+<li><p>The target is taken from the accuracy log.</p></li>
+</ol>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>reserrlog</strong> (<em>list</em>) – List of error log arrays.</p></li>
+<li><p><strong>otlog</strong> (<em>list</em>) – List of OT log arrays.</p></li>
+<li><p><strong>accs</strong> (<em>list</em>) – List of accuracy arrays.</p></li>
+<li><p><strong>mask</strong> (<em>np.ndarray</em>) – Binary mask (same shape) to zero out selected entries.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>(X, y) where X is the feature matrix and y is the target vector.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="projektor.projector.Projector.project_performance">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">project_performance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n0</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">perf0</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">perf1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/projektor/projector.html#Projector.project_performance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#projektor.projector.Projector.project_performance" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extrapolates performance to a new data scale n given performances at n0 and n1.</p>
+<dl class="simple">
+<dt>Formula:</dt><dd><p>performance_proj = (1 / ln(n1/n0)) * [ln(n/n0) * perf1 - ln(n/n1) * perf0]</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n</strong> (<em>float</em>) – Target data size.</p></li>
+<li><p><strong>n0</strong> (<em>float</em>) – Baseline data size 0.</p></li>
+<li><p><strong>n1</strong> (<em>float</em>) – Baseline data size 1.</p></li>
+<li><p><strong>perf0</strong> (<em>float</em>) – Performance at n0.</p></li>
+<li><p><strong>perf1</strong> (<em>float</em>) – Performance at n1.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The extrapolated performance.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="projektor.projector.project_onto_simplex">
+<span class="sig-prename descclassname"><span class="pre">projektor.projector.</span></span><span class="sig-name descname"><span class="pre">project_onto_simplex</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/projektor/projector.html#project_onto_simplex"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#projektor.projector.project_onto_simplex" title="Permalink to this definition">¶</a></dt>
+<dd><p>Projects a vector v onto the probability simplex (nonnegative entries summing to 1)
+using the algorithm of Duchi et al. (2008).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>v</strong> (<em>np.ndarray</em>) – Input vector.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The projected vector.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">Projektor Generalized</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Projektor Generalized Modules</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#projektor.base_models.BaseClassifier"><code class="docutils literal notranslate"><span class="pre">BaseClassifier</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#projektor.base_models.BaseEmbedder"><code class="docutils literal notranslate"><span class="pre">BaseEmbedder</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#projector">Projector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#optimaldatasourceselector">OptimalDataSourceSelector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#projektor.projector.OptimalDataSourceSelector"><code class="docutils literal notranslate"><span class="pre">OptimalDataSourceSelector</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#projektor.projector.Projector"><code class="docutils literal notranslate"><span class="pre">Projector</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#projektor.projector.project_onto_simplex"><code class="docutils literal notranslate"><span class="pre">project_onto_simplex()</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">Projektor Generalized Documentation</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
+      
+      |
+      <a href="_sources/modules.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

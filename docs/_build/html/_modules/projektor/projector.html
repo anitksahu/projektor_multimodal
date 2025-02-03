@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>projektor.projector &#8212; Projektor Generalized 0.1.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=6625fa76" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=039e1c02" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js?v=2389946f"></script>
+    <script src="../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for projektor.projector</h1><div class="highlight"><pre>
+<span></span><span class="c1"># projektor/projector.py</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Module: projector.py</span>
+
+<span class="sd">This module provides two classes:</span>
+
+<span class="sd">Projector</span>
+<span class="sd">---------</span>
+<span class="sd">The Projector class encapsulates methods to process experimental logs,</span>
+<span class="sd">generate pseudo–quadratic regression features, fit a linear regression model,</span>
+<span class="sd">and make performance predictions. It also provides a method for extrapolating</span>
+<span class="sd">performance to new data scales.</span>
+
+<span class="sd">Example usage:</span>
+
+<span class="sd">    &gt;&gt;&gt; from projektor.projector import Projector</span>
+<span class="sd">    &gt;&gt;&gt; proj = Projector(pad_length=11, threshold=5)</span>
+<span class="sd">    &gt;&gt;&gt; reserrlog = [ [0.1, 0.2, 0.3], [0.15, 0.25] ]</span>
+<span class="sd">    &gt;&gt;&gt; otlog = [ [1.0, 1.2, 1.1], [0.9, 1.0] ]</span>
+<span class="sd">    &gt;&gt;&gt; accs = [ [0.75, 0.78, 0.80], [0.74, 0.76] ]</span>
+<span class="sd">    &gt;&gt;&gt; aligned = proj.align_data(reserrlog)</span>
+<span class="sd">    &gt;&gt;&gt; mask_low, mask_high = proj.compute_masks(aligned)</span>
+<span class="sd">    &gt;&gt;&gt; X, y = proj.prepare_features(reserrlog, otlog, accs, mask_high)</span>
+<span class="sd">    &gt;&gt;&gt; results = proj.fit(X, y, verbose=True, plot=False)</span>
+<span class="sd">    &gt;&gt;&gt; pred = proj.predict(X[0])</span>
+<span class="sd">    &gt;&gt;&gt; print(&quot;Predicted performance:&quot;, pred)</span>
+
+<span class="sd">OptimalDataSourceSelector</span>
+<span class="sd">---------------------------</span>
+<span class="sd">The OptimalDataSourceSelector class implements a gradient-based optimizer to select</span>
+<span class="sd">an optimal mixing ratio among an arbitrary number (k) of data sources.</span>
+
+<span class="sd">Example usage:</span>
+
+<span class="sd">    &gt;&gt;&gt; from projektor.projector import OptimalDataSourceSelector, project_onto_simplex</span>
+<span class="sd">    &gt;&gt;&gt; import numpy as np</span>
+<span class="sd">    &gt;&gt;&gt; k = 3</span>
+<span class="sd">    &gt;&gt;&gt; q_init = np.array([0.33, 0.33, 0.34])</span>
+<span class="sd">    &gt;&gt;&gt; # data_n0 and data_n1 should be dictionaries with keys:</span>
+<span class="sd">    &gt;&gt;&gt; #   &#39;dual&#39;: 1D array of dual solutions,</span>
+<span class="sd">    &gt;&gt;&gt; #   &#39;ds_lengths&#39;: list of source lengths,</span>
+<span class="sd">    &gt;&gt;&gt; #   &#39;full_len&#39;: total samples,</span>
+<span class="sd">    &gt;&gt;&gt; #   &#39;ot_dist&#39;: scalar OT distance.</span>
+<span class="sd">    &gt;&gt;&gt; data_n0 = {&#39;dual&#39;: np.random.rand(90), &#39;ds_lengths&#39;: [30, 30, 30], &#39;full_len&#39;: 90, &#39;ot_dist&#39;: 1.0}</span>
+<span class="sd">    &gt;&gt;&gt; data_n1 = {&#39;dual&#39;: np.random.rand(90), &#39;ds_lengths&#39;: [30, 30, 30], &#39;full_len&#39;: 90, &#39;ot_dist&#39;: 1.2}</span>
+<span class="sd">    &gt;&gt;&gt; selector = OptimalDataSourceSelector(lr=5e-4, iterations=100, decay=0.90)</span>
+<span class="sd">    &gt;&gt;&gt; optimal_q = selector.optimize(n=10000, n0=1000, n1=1500,</span>
+<span class="sd">    ...                               data_n0=data_n0, data_n1=data_n1,</span>
+<span class="sd">    ...                               q_init=q_init)</span>
+<span class="sd">    &gt;&gt;&gt; print(&quot;Optimal mixing ratios:&quot;, optimal_q)</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.linear_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">LinearRegression</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">r2_score</span><span class="p">,</span> <span class="n">mean_squared_error</span><span class="p">,</span> <span class="n">mean_absolute_error</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+
+<div class="viewcode-block" id="Projector"><a class="viewcode-back" href="../../modules.html#projektor.projector.Projector">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">Projector</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pad_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">11</span><span class="p">,</span> <span class="n">threshold</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize the Projector.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            pad_length (int): Fixed length for each experimental log array.</span>
+<span class="sd">            threshold (int): Threshold used in mask generation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pad_length</span> <span class="o">=</span> <span class="n">pad_length</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">threshold</span> <span class="o">=</span> <span class="n">threshold</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="Projector.align_data"><a class="viewcode-back" href="../../modules.html#projektor.projector.Projector.align_data">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">align_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_list</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Aligns a list of 1-D arrays to a fixed length by padding with zeros.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            data_list (list): List of numeric arrays or lists.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            np.ndarray: Array of shape (n, pad_length).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">aligned</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">arr</span> <span class="ow">in</span> <span class="n">data_list</span><span class="p">:</span>
+            <span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">arr</span><span class="o">.</span><span class="n">size</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">pad_length</span><span class="p">:</span>
+                <span class="n">pad</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pad_length</span> <span class="o">-</span> <span class="n">arr</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+                <span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">arr</span><span class="p">,</span> <span class="n">pad</span><span class="p">])</span>
+            <span class="n">aligned</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">aligned</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Projector.compute_masks"><a class="viewcode-back" href="../../modules.html#projektor.projector.Projector.compute_masks">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">compute_masks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">aligned_data</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Computes two binary masks from the aligned data.</span>
+
+<span class="sd">        mask_low:</span>
+<span class="sd">            True for entries with index less than threshold.</span>
+<span class="sd">        mask_high:</span>
+<span class="sd">            True for entries with index greater than or equal to threshold and where row+col &lt;= pad_length-1.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            aligned_data (np.ndarray): Array of shape (n, pad_length).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            tuple: (mask_low, mask_high) as boolean arrays.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">n</span><span class="p">,</span> <span class="n">m</span> <span class="o">=</span> <span class="n">aligned_data</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">mask_low</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n</span><span class="p">,</span> <span class="n">m</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+        <span class="n">mask_high</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n</span><span class="p">,</span> <span class="n">m</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">aligned_data</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">threshold</span><span class="p">:</span>
+                        <span class="n">mask_low</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="k">elif</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="n">j</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="p">(</span><span class="n">m</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+                        <span class="n">mask_high</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="n">mask_low</span><span class="p">,</span> <span class="n">mask_high</span></div>
+
+<div class="viewcode-block" id="Projector.compute_scaling_matrices"><a class="viewcode-back" href="../../modules.html#projektor.projector.Projector.compute_scaling_matrices">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">compute_scaling_matrices</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">m</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Computes scaling matrices A1 and A2.</span>
+
+<span class="sd">        A1[i, j] = i / (n - 1)</span>
+<span class="sd">        A2[i, j] = j / (m - 1)</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            n (int): Number of rows.</span>
+<span class="sd">            m (int): Number of columns.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            tuple: (A1, A2)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">A1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">m</span><span class="p">))</span>
+        <span class="n">A2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">m</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">m</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">n</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">A1</span><span class="p">,</span> <span class="n">A2</span></div>
+
+<div class="viewcode-block" id="Projector.prepare_features"><a class="viewcode-back" href="../../modules.html#projektor.projector.Projector.prepare_features">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">prepare_features</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reserrlog</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">otlog</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">accs</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">mask</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Prepares regression features and target vector from experimental logs.</span>
+
+<span class="sd">        Process:</span>
+<span class="sd">          1. Align each log to a fixed length.</span>
+<span class="sd">          2. Zero out entries indicated by the mask.</span>
+<span class="sd">          3. Extract nonzero indices from the OT log.</span>
+<span class="sd">          4. Compute the logarithm of error values.</span>
+<span class="sd">          5. Compute scaling matrices.</span>
+<span class="sd">          6. Assemble a feature matrix with 7 columns:</span>
+<span class="sd">             [OT, scaling1, scaling2, scaling1*OT, scaling2*OT, (scaling2)^2*OT, (scaling1)^2*OT]</span>
+<span class="sd">          7. The target is taken from the accuracy log.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            reserrlog (list): List of error log arrays.</span>
+<span class="sd">            otlog (list): List of OT log arrays.</span>
+<span class="sd">            accs (list): List of accuracy arrays.</span>
+<span class="sd">            mask (np.ndarray): Binary mask (same shape) to zero out selected entries.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            tuple: (X, y) where X is the feature matrix and y is the target vector.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">qs_res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">align_data</span><span class="p">(</span><span class="n">reserrlog</span><span class="p">)</span>
+        <span class="n">qs_ot</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">align_data</span><span class="p">(</span><span class="n">otlog</span><span class="p">)</span>
+        <span class="n">qs_acc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">align_data</span><span class="p">(</span><span class="n">accs</span><span class="p">)</span>
+
+        <span class="n">qs_res</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">qs_ot</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">qs_acc</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="n">nonzero_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">qs_ot</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">nonzero_idx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No nonzero entries found in OT data after masking.&quot;</span><span class="p">)</span>
+
+        <span class="n">res_nonzero</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">qs_res</span><span class="p">[</span><span class="n">nonzero_idx</span><span class="p">]</span> <span class="o">+</span> <span class="mf">1e-8</span><span class="p">)</span>
+        <span class="n">ot_nonzero</span> <span class="o">=</span> <span class="n">qs_ot</span><span class="p">[</span><span class="n">nonzero_idx</span><span class="p">]</span>
+        <span class="n">acc_nonzero</span> <span class="o">=</span> <span class="n">qs_acc</span><span class="p">[</span><span class="n">nonzero_idx</span><span class="p">]</span>
+
+        <span class="n">n_rows</span><span class="p">,</span> <span class="n">n_cols</span> <span class="o">=</span> <span class="n">qs_res</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">A1</span><span class="p">,</span> <span class="n">A2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_scaling_matrices</span><span class="p">(</span><span class="n">n_rows</span><span class="p">,</span> <span class="n">n_cols</span><span class="p">)</span>
+        <span class="n">scaling1</span> <span class="o">=</span> <span class="n">A1</span><span class="p">[</span><span class="n">nonzero_idx</span><span class="p">]</span>
+        <span class="n">scaling2</span> <span class="o">=</span> <span class="n">A2</span><span class="p">[</span><span class="n">nonzero_idx</span><span class="p">]</span>
+
+        <span class="n">num_points</span> <span class="o">=</span> <span class="n">ot_nonzero</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">num_points</span><span class="p">,</span> <span class="mi">7</span><span class="p">))</span>
+        <span class="n">X</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">ot_nonzero</span>
+        <span class="n">X</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">scaling1</span>
+        <span class="n">X</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">scaling2</span>
+        <span class="n">X</span><span class="p">[:,</span> <span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="n">scaling1</span> <span class="o">*</span> <span class="n">ot_nonzero</span>
+        <span class="n">X</span><span class="p">[:,</span> <span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="n">scaling2</span> <span class="o">*</span> <span class="n">ot_nonzero</span>
+        <span class="n">X</span><span class="p">[:,</span> <span class="mi">5</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">scaling2</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="n">ot_nonzero</span>
+        <span class="n">X</span><span class="p">[:,</span> <span class="mi">6</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">scaling1</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="n">ot_nonzero</span>
+
+        <span class="n">y</span> <span class="o">=</span> <span class="n">acc_nonzero</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span></div>
+
+<div class="viewcode-block" id="Projector.fit"><a class="viewcode-back" href="../../modules.html#projektor.projector.Projector.fit">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">plot</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Fits a linear regression model to predict performance from features.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict: Contains the fitted model and performance metrics (r2, mse, mae).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">reg</span> <span class="o">=</span> <span class="n">LinearRegression</span><span class="p">()</span>
+        <span class="n">reg</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+        <span class="n">y_pred</span> <span class="o">=</span> <span class="n">reg</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+        <span class="n">metrics</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;r2&#39;</span><span class="p">:</span> <span class="n">r2_score</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">),</span>
+            <span class="s1">&#39;mse&#39;</span><span class="p">:</span> <span class="n">mean_squared_error</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">),</span>
+            <span class="s1">&#39;mae&#39;</span><span class="p">:</span> <span class="n">mean_absolute_error</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Fitted model coefficients:&quot;</span><span class="p">,</span> <span class="n">reg</span><span class="o">.</span><span class="n">coef_</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Intercept:&quot;</span><span class="p">,</span> <span class="n">reg</span><span class="o">.</span><span class="n">intercept_</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;R²: </span><span class="si">{</span><span class="n">metrics</span><span class="p">[</span><span class="s1">&#39;r2&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">, MSE: </span><span class="si">{</span><span class="n">metrics</span><span class="p">[</span><span class="s1">&#39;mse&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">, MAE: </span><span class="si">{</span><span class="n">metrics</span><span class="p">[</span><span class="s1">&#39;mae&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">plot</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s1">&#39;blue&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Predictions&#39;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="nb">min</span><span class="p">(</span><span class="n">y</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">y</span><span class="p">)],</span> <span class="p">[</span><span class="nb">min</span><span class="p">(</span><span class="n">y</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">y</span><span class="p">)],</span> <span class="s1">&#39;r--&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Ideal&#39;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;Actual Performance&quot;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;Predicted Performance&quot;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Projector: Actual vs Predicted&quot;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">reg</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;model&#39;</span><span class="p">:</span> <span class="n">reg</span><span class="p">,</span> <span class="o">**</span><span class="n">metrics</span><span class="p">}</span></div>
+
+<div class="viewcode-block" id="Projector.predict"><a class="viewcode-back" href="../../modules.html#projektor.projector.Projector.predict">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X_new</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Predicts performance for a new feature vector using the fitted model.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            X_new (np.ndarray): A 1D array (or a single-row 2D array) of features.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            float: The predicted performance.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No model has been fitted. Call fit() first.&quot;</span><span class="p">)</span>
+        <span class="n">X_new</span> <span class="o">=</span> <span class="n">X_new</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_new</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="Projector.project_performance"><a class="viewcode-back" href="../../modules.html#projektor.projector.Projector.project_performance">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">project_performance</span><span class="p">(</span><span class="n">n</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">n0</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">n1</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">perf0</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">perf1</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Extrapolates performance to a new data scale n given performances at n0 and n1.</span>
+
+<span class="sd">        Formula:</span>
+<span class="sd">            performance_proj = (1 / ln(n1/n0)) * [ln(n/n0) * perf1 - ln(n/n1) * perf0]</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            n (float): Target data size.</span>
+<span class="sd">            n0 (float): Baseline data size 0.</span>
+<span class="sd">            n1 (float): Baseline data size 1.</span>
+<span class="sd">            perf0 (float): Performance at n0.</span>
+<span class="sd">            perf1 (float): Performance at n1.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            float: The extrapolated performance.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">n0</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">n1</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">n</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Data sizes must be positive.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">n1</span> <span class="o">/</span> <span class="n">n0</span><span class="p">))</span> <span class="o">*</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">n</span> <span class="o">/</span> <span class="n">n0</span><span class="p">)</span> <span class="o">*</span> <span class="n">perf1</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">n</span> <span class="o">/</span> <span class="n">n1</span><span class="p">)</span> <span class="o">*</span> <span class="n">perf0</span><span class="p">)</span></div></div>
+
+<span class="c1"># -----------------------------------------</span>
+<span class="c1"># Helper: Projection onto the Simplex</span>
+<span class="c1"># -----------------------------------------</span>
+<div class="viewcode-block" id="project_onto_simplex"><a class="viewcode-back" href="../../modules.html#projektor.projector.project_onto_simplex">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">project_onto_simplex</span><span class="p">(</span><span class="n">v</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Projects a vector v onto the probability simplex (nonnegative entries summing to 1)</span>
+<span class="sd">    using the algorithm of Duchi et al. (2008).</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        v (np.ndarray): Input vector.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        np.ndarray: The projected vector.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="n">v</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">u</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">v</span><span class="p">)[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">cssv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">u</span><span class="p">)</span>
+    <span class="n">rho</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">u</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&gt;</span> <span class="p">(</span><span class="n">cssv</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))[</span><span class="mi">0</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">theta</span> <span class="o">=</span> <span class="p">(</span><span class="n">cssv</span><span class="p">[</span><span class="n">rho</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">rho</span> <span class="o">+</span> <span class="mf">1.0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">v</span> <span class="o">-</span> <span class="n">theta</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span></div>
+
+<span class="c1"># -----------------------------------------</span>
+<span class="c1"># OptimalDataSourceSelector Class</span>
+<span class="c1"># -----------------------------------------</span>
+<div class="viewcode-block" id="OptimalDataSourceSelector"><a class="viewcode-back" href="../../modules.html#projektor.projector.OptimalDataSourceSelector">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">OptimalDataSourceSelector</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lr</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">5e-4</span><span class="p">,</span> <span class="n">iterations</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="n">decay</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.90</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize the OptimalDataSourceSelector.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            lr (float): Initial learning rate.</span>
+<span class="sd">            iterations (int): Number of gradient descent iterations.</span>
+<span class="sd">            decay (float): Learning rate decay factor.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lr</span> <span class="o">=</span> <span class="n">lr</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">iterations</span> <span class="o">=</span> <span class="n">iterations</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">decay</span> <span class="o">=</span> <span class="n">decay</span>
+
+<div class="viewcode-block" id="OptimalDataSourceSelector.optimize"><a class="viewcode-back" href="../../modules.html#projektor.projector.OptimalDataSourceSelector.optimize">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">optimize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">n0</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">n1</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                 <span class="n">data_n0</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">data_n1</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+                 <span class="n">q_init</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                 <span class="n">params0</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">params1</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Optimizes mixing ratios q = [q_1, ..., q_k] for k data sources via gradient descent</span>
+<span class="sd">        with projection onto the probability simplex.</span>
+
+<span class="sd">        For each data source i, a gradient is computed using dual solutions and OT distances</span>
+<span class="sd">        from two experiments (at data sizes n0 and n1). The gradient for source i is:</span>
+
+<span class="sd">            grad_i = (1/ln(n1/n0)) * [ ln(n/n0)*g_i^(1) - ln(n/n1)*g_i^(0) ],</span>
+
+<span class="sd">        where g_i^(0) and g_i^(1) are computed with user-supplied parameters.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            n (float): Target data size.</span>
+<span class="sd">            n0 (float): Base data size for experiment 0.</span>
+<span class="sd">            n1 (float): Base data size for experiment 1.</span>
+<span class="sd">            data_n0 (dict): For experiment at n0; must contain:</span>
+<span class="sd">                &#39;dual&#39;: concatenated dual solution vector (1D array),</span>
+<span class="sd">                &#39;ds_lengths&#39;: list of lengths for each source,</span>
+<span class="sd">                &#39;full_len&#39;: total number of samples,</span>
+<span class="sd">                &#39;ot_dist&#39;: OT distance (scalar).</span>
+<span class="sd">            data_n1 (dict): Same as data_n0 but for experiment at n1.</span>
+<span class="sd">            q_init (np.ndarray): Initial mixing ratios (shape (k,)) that sum to 1.</span>
+<span class="sd">            params0 (list): List of parameter dictionaries for experiment 0 (one per source), each with keys:</span>
+<span class="sd">                           &#39;b2&#39;, &#39;b1&#39;, &#39;b0&#39;, &#39;c2&#39;, &#39;c1&#39;. Defaults to zeros if None.</span>
+<span class="sd">            params1 (list): Same as params0 for experiment 1.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            np.ndarray: Optimized mixing ratios q of shape (k,).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">k</span> <span class="o">=</span> <span class="n">q_init</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">default_params</span><span class="p">():</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;b2&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span> <span class="s1">&#39;b1&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span> <span class="s1">&#39;b0&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span> <span class="s1">&#39;c2&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span> <span class="s1">&#39;c1&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">}</span>
+
+        <span class="k">if</span> <span class="n">params0</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">params0</span> <span class="o">=</span> <span class="p">[</span><span class="n">default_params</span><span class="p">()</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">k</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="n">params1</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">params1</span> <span class="o">=</span> <span class="p">[</span><span class="n">default_params</span><span class="p">()</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">k</span><span class="p">)]</span>
+
+        <span class="n">q</span> <span class="o">=</span> <span class="n">q_init</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="c1"># Unpack experiment 0 data.</span>
+        <span class="n">dual0</span> <span class="o">=</span> <span class="n">data_n0</span><span class="p">[</span><span class="s1">&#39;dual&#39;</span><span class="p">]</span>
+        <span class="n">lengths0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">data_n0</span><span class="p">[</span><span class="s1">&#39;ds_lengths&#39;</span><span class="p">])</span>
+        <span class="n">full_len0</span> <span class="o">=</span> <span class="n">data_n0</span><span class="p">[</span><span class="s1">&#39;full_len&#39;</span><span class="p">]</span>
+        <span class="n">ot0</span> <span class="o">=</span> <span class="n">data_n0</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;ot_dist&#39;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+
+        <span class="c1"># Unpack experiment 1 data.</span>
+        <span class="n">dual1</span> <span class="o">=</span> <span class="n">data_n1</span><span class="p">[</span><span class="s1">&#39;dual&#39;</span><span class="p">]</span>
+        <span class="n">lengths1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">data_n1</span><span class="p">[</span><span class="s1">&#39;ds_lengths&#39;</span><span class="p">])</span>
+        <span class="n">full_len1</span> <span class="o">=</span> <span class="n">data_n1</span><span class="p">[</span><span class="s1">&#39;full_len&#39;</span><span class="p">]</span>
+        <span class="n">ot1</span> <span class="o">=</span> <span class="n">data_n1</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;ot_dist&#39;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+
+        <span class="c1"># Compute calibrated gradient for each source.</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">calib</span><span class="p">(</span><span class="n">dual</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">full_len</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">L</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">full_len</span> <span class="o">-</span> <span class="n">L</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">return</span> <span class="mf">0.0</span>
+            <span class="n">part</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dual</span><span class="p">[</span><span class="n">start</span><span class="p">:</span> <span class="n">start</span> <span class="o">+</span> <span class="n">L</span><span class="p">])</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">part</span> <span class="o">-</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dual</span><span class="p">)</span> <span class="o">-</span> <span class="n">part</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">L</span> <span class="o">/</span> <span class="p">(</span><span class="n">full_len</span> <span class="o">-</span> <span class="n">L</span><span class="p">)))</span> <span class="o">/</span> <span class="n">L</span>
+
+        <span class="n">calib0</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">L</span> <span class="ow">in</span> <span class="n">lengths0</span><span class="p">:</span>
+            <span class="n">calib0</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">calib</span><span class="p">(</span><span class="n">dual0</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">full_len0</span><span class="p">))</span>
+            <span class="n">start</span> <span class="o">+=</span> <span class="n">L</span>
+        <span class="n">calib1</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">L</span> <span class="ow">in</span> <span class="n">lengths1</span><span class="p">:</span>
+            <span class="n">calib1</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">calib</span><span class="p">(</span><span class="n">dual1</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">full_len1</span><span class="p">))</span>
+            <span class="n">start</span> <span class="o">+=</span> <span class="n">L</span>
+
+        <span class="c1"># Gradient function for source i.</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">grad_component</span><span class="p">(</span><span class="n">q_i</span><span class="p">,</span> <span class="n">calib_i</span><span class="p">,</span> <span class="n">ot</span><span class="p">,</span> <span class="n">params</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;b2&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">q_i</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;b1&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">q_i</span> <span class="o">+</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;b0&#39;</span><span class="p">])</span> <span class="o">*</span> <span class="n">calib_i</span> \
+                   <span class="o">+</span> <span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;b2&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">q_i</span> <span class="o">+</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;b1&#39;</span><span class="p">])</span> <span class="o">*</span> <span class="n">ot</span> \
+                   <span class="o">+</span> <span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;c2&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">q_i</span> <span class="o">+</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;c1&#39;</span><span class="p">])</span>
+
+        <span class="k">for</span> <span class="n">it</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">iterations</span><span class="p">):</span>
+            <span class="n">step</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lr</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">decay</span> <span class="o">**</span> <span class="n">it</span><span class="p">)</span>
+            <span class="n">grad</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">q</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">k</span><span class="p">):</span>
+                <span class="n">g0</span> <span class="o">=</span> <span class="n">grad_component</span><span class="p">(</span><span class="n">q</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">calib0</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">ot0</span><span class="p">,</span> <span class="n">params0</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                <span class="n">g1</span> <span class="o">=</span> <span class="n">grad_component</span><span class="p">(</span><span class="n">q</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">calib1</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">ot1</span><span class="p">,</span> <span class="n">params1</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                <span class="n">grad</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">n1</span> <span class="o">/</span> <span class="n">n0</span><span class="p">))</span> <span class="o">*</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">n</span> <span class="o">/</span> <span class="n">n0</span><span class="p">)</span> <span class="o">*</span> <span class="n">g1</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">n</span> <span class="o">/</span> <span class="n">n1</span><span class="p">)</span> <span class="o">*</span> <span class="n">g0</span><span class="p">)</span>
+            <span class="n">q</span> <span class="o">=</span> <span class="n">q</span> <span class="o">+</span> <span class="n">step</span> <span class="o">*</span> <span class="n">grad</span>
+            <span class="n">q</span> <span class="o">=</span> <span class="n">project_onto_simplex</span><span class="p">(</span><span class="n">q</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">q</span></div></div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">Projektor Generalized</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">Projektor Generalized Modules</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
